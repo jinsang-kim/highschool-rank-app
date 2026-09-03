@@ -69,7 +69,7 @@ export default function TeacherAuthModal({
                 type="password"
                 maxLength={30}
                 autoFocus
-                placeholder="비밀번호 입력 (admin123)"
+                placeholder="비밀번호를 입력하세요"
                 value={pinInput}
                 onChange={(e) => {
                   setPinInput(e.target.value);
@@ -95,10 +95,6 @@ export default function TeacherAuthModal({
               <span>교사 모드로 접속하기</span>
             </button>
           </form>
-
-          <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-100">
-            💡 고정 관리자 비밀번호는 <b className="text-purple-600 font-mono">admin123</b> 입니다.
-          </div>
         </motion.div>
       </div>
     </AnimatePresence>
