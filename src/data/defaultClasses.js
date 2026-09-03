@@ -40,7 +40,7 @@ export const CATEGORY_ICONS = {
 };
 
 // ⚙️ [선생님의 고정 Web App URL] 여기에 배포 URL을 입력해두면 어떤 기기/브라우저에서도 절대 풀리지 않고 100% 자동 연결됩니다!
-export const DEFAULT_FIXED_GAS_URL = "";
+export const DEFAULT_FIXED_GAS_URL = "https://script.google.com/macros/s/AKfycbyJbbiqSpDb64rRFdVVgHd-OmlzOU6fTniACsM0v6SShCARC7X2hSms8QlkT0hTsqgwiw/exec";
 
 /**
  * [당월(Current Month) 자동 필터링 탑재 Google Apps Script]
