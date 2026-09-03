@@ -4,9 +4,9 @@ import { processStudentRankings } from '../utils/rankCalculator';
 import { fireMonthlyGrandCelebration } from '../utils/confetti';
 
 const STORAGE_KEYS = {
-  STUDENTS: 'hsg_rank_students_v2',
+  STUDENTS: 'hsg_rank_students_clean_v1',
   GAS_URL: 'hsg_gas_url_v2',
-  HALL_OF_FAME: 'hsg_hall_of_fame_v2',
+  HALL_OF_FAME: 'hsg_hall_of_fame_clean_v1',
   LAST_CHECKED_MONTH: 'hsg_last_checked_month_v2',
 };
 
