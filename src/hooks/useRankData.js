@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { DEFAULT_STUDENTS, SAMPLE_HALL_OF_FAME } from '../data/defaultClasses';
+import { DEFAULT_STUDENTS, SAMPLE_HALL_OF_FAME, DEFAULT_FIXED_GAS_URL } from '../data/defaultClasses';
 import { processStudentRankings } from '../utils/rankCalculator';
 import { fireMonthlyGrandCelebration } from '../utils/confetti';
 
@@ -22,12 +22,14 @@ export function useRankData() {
     }
   });
 
-  // 2. GAS Web App URL
+  // 2. GAS Web App URL (코드 고정 기본값, 환경 변수, 로컬 스토리지 순서로 탐색)
   const [gasUrl, setGasUrl] = useState(() => {
     try {
-      return localStorage.getItem(STORAGE_KEYS.GAS_URL) || '';
+      const saved = localStorage.getItem(STORAGE_KEYS.GAS_URL);
+      if (saved && saved.trim()) return saved;
+      return import.meta.env.VITE_GAS_URL || DEFAULT_FIXED_GAS_URL || '';
     } catch (e) {
-      return '';
+      return import.meta.env.VITE_GAS_URL || DEFAULT_FIXED_GAS_URL || '';
     }
   });
 
@@ -146,6 +148,14 @@ export function useRankData() {
       return false;
     }
   }, [gasUrl]);
+
+  // 앱 최초 접속 시 또는 페이지 새로고침 시 자동으로 1회 실시간 동기화 실행
+  useEffect(() => {
+    const activeUrl = gasUrl || import.meta.env.VITE_GAS_URL || DEFAULT_FIXED_GAS_URL;
+    if (activeUrl && activeUrl.trim()) {
+      syncWithGas(activeUrl.trim());
+    }
+  }, []); // 마운트 시 1회 자동 실행
 
   // 학생 추가
   const addStudent = useCallback((newStudentData) => {

@@ -39,6 +39,9 @@ export const CATEGORY_ICONS = {
   '기타': '📝'
 };
 
+// ⚙️ [선생님의 고정 Web App URL] 여기에 배포 URL을 입력해두면 어떤 기기/브라우저에서도 절대 풀리지 않고 100% 자동 연결됩니다!
+export const DEFAULT_FIXED_GAS_URL = "";
+
 /**
  * [당월(Current Month) 자동 필터링 탑재 Google Apps Script]
  * 다음 달이 되면 이전 달 기록이 자동으로 제외되고 해당 월의 출석만 집계됩니다!
