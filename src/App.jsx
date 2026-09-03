@@ -20,7 +20,7 @@ export default function App() {
   const [role, setRole] = useState('student'); // 'student' | 'teacher'
   const [isTeacherAuthOpen, setIsTeacherAuthOpen] = useState(false);
   const [teacherPin, setTeacherPin] = useState(() => {
-    return localStorage.getItem('hsg_teacher_pin') || '1234';
+    return localStorage.getItem('hsg_teacher_pin') || 'admin123';
   });
 
   const {

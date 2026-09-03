@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 - 브라우저에서 `http://localhost:5173/` 접속 (학생 랭킹 화면)
-- 교사 관리자 페이지: `http://localhost:5173/teacher` (초기 비밀번호: `1234`)
+- 교사 관리자 페이지: `http://localhost:5173/teacher` (초기 비밀번호: `admin123`)
 
 ### 3. 프로덕션 빌드
 ```bash

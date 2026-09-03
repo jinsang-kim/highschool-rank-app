@@ -6,7 +6,7 @@ export default function TeacherAuthModal({
   isOpen,
   onClose,
   onSuccess,
-  teacherPin = '1234',
+  teacherPin = 'admin123',
 }) {
   const [pinInput, setPinInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -15,12 +15,13 @@ export default function TeacherAuthModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (pinInput === teacherPin) {
+    // 'admin123' 또는 지정된 PIN으로 인증
+    if (pinInput.trim() === 'admin123' || pinInput.trim() === teacherPin.trim()) {
       setErrorMsg('');
       setPinInput('');
       onSuccess();
     } else {
-      setErrorMsg('비밀번호(PIN)가 일치하지 않습니다.');
+      setErrorMsg('비밀번호가 일치하지 않습니다.');
       setPinInput('');
     }
   };
@@ -58,7 +59,7 @@ export default function TeacherAuthModal({
           <div className="space-y-1">
             <h3 className="text-lg font-black text-slate-800">선생님 전용 모드 인증</h3>
             <p className="text-xs text-slate-500">
-              학생들의 임의 조작 방지를 위해 교사 인증 번호를 입력해 주세요.
+              학생들의 임의 조작 방지를 위해 교사 인증 비밀번호를 입력해 주세요.
             </p>
           </div>
 
@@ -66,15 +67,15 @@ export default function TeacherAuthModal({
             <div>
               <input
                 type="password"
-                maxLength={8}
+                maxLength={30}
                 autoFocus
-                placeholder="선생님 비밀번호 (기본: 1234)"
+                placeholder="비밀번호 입력 (admin123)"
                 value={pinInput}
                 onChange={(e) => {
                   setPinInput(e.target.value);
                   setErrorMsg('');
                 }}
-                className="w-full px-4 py-3 text-center tracking-widest text-lg font-black bg-slate-50 border border-purple-200 rounded-2xl focus:ring-2 focus:ring-purple-300 focus:outline-hidden"
+                className="w-full px-4 py-3 text-center tracking-widest text-base font-black bg-slate-50 border border-purple-200 rounded-2xl focus:ring-2 focus:ring-purple-300 focus:outline-hidden"
                 required
               />
             </div>
@@ -96,7 +97,7 @@ export default function TeacherAuthModal({
           </form>
 
           <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-100">
-            💡 초기 디폴트 비밀번호는 <b className="text-purple-600">1234</b> 입니다.
+            💡 고정 관리자 비밀번호는 <b className="text-purple-600 font-mono">admin123</b> 입니다.
           </div>
         </motion.div>
       </div>
