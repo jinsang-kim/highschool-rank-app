@@ -119,7 +119,7 @@ function getCurrentYearMonth() {
 function parseYearMonthFromDate(dateValue, defaultYear, defaultMonth) {
   if (!dateValue) return null;
   
-  if (dateValue instanceof Date) {
+  if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
     const y = dateValue.getFullYear();
     const m = ('0' + (dateValue.getMonth() + 1)).slice(-2);
     return y + '-' + m;
@@ -128,16 +128,16 @@ function parseYearMonthFromDate(dateValue, defaultYear, defaultMonth) {
   const str = String(dateValue).trim();
   if (str === '') return null;
   
-  // 1) "2026-09-01", "2026.09.01", "2026/09/01", "2026년 9월" 등
-  const ymdMatch = str.match(/(\\d{4})[-./년\\s]+(\\d{1,2})/);
+  // 1) "2026-09-01", "2026. 9. 1.", "2026.09.01", "2026/09/01", "2026년 9월 1일" 등
+  const ymdMatch = str.match(/(\\d{4})[^0-9]+(\\d{1,2})/);
   if (ymdMatch) {
     const y = ymdMatch[1];
     const m = ('0' + parseInt(ymdMatch[2])).slice(-2);
     return y + '-' + m;
   }
   
-  // 2) "9/1", "9-1", "9월 1일" 등 연도가 없는 경우
-  const mdMatch = str.match(/^(\\d{1,2})[-./월\\s]+/);
+  // 2) "9/1", "9.1", "9-1", "9월 1일" 등 연도가 없는 경우
+  const mdMatch = str.match(/^(\\d{1,2})[^0-9]+/);
   if (mdMatch) {
     const m = ('0' + parseInt(mdMatch[1])).slice(-2);
     return defaultYear + '-' + m;
@@ -172,7 +172,6 @@ function fetchIntegratedData() {
   const curYear = now.getFullYear();
   const curMonth = now.getMonth() + 1; // 1~12 (현재 월, 예: 10)
   const curYearMonth = curYear + '-' + ('0' + curMonth).slice(-2); // "2026-10"
-  const curYearMonthLabel = curYear + "년 " + curMonth + "월";
 
   // 1. [학생명단] 탭 로드 (A:학번, B:이름)
   const studentListSheet = ss.getSheetByName("학생명단") || 
@@ -213,7 +212,7 @@ function fetchIntegratedData() {
   }
 
   // 2. [특별가점] 탭 로드
-  const specialMapByMonthAndStudent = {}; // { "2026-09": { "1101": 10 } }
+  const specialMapByMonthAndStudent = {};
   const generalSpecialMap = {};
   const studentMottoMap = {};
 
@@ -248,17 +247,46 @@ function fetchIntegratedData() {
     if (idx !== undefined) baseStudents[idx].motto = studentMottoMap[sId];
   });
 
-  // 3. [출석기록] 탭 파싱 - 모든 행의 날짜를 연/월(YYYY-MM)별로 완전 분류!
-  const yajaSheet = ss.getSheetByName("출석기록") || 
-                    ss.getSheetByName(curMonth + "월 출석기록") || 
-                    ss.getSheetByName(curMonth + "월");
+  // 3. [출석기록] 탭 파싱 - "출석", "야자", "9월", "10월" 등 관련 시트 모두 자동 탐색!
+  const allSheets = ss.getSheets();
+  const yajaSheets = [];
+
+  for (let s = 0; s < allSheets.length; s++) {
+    const sheetName = allSheets[s].getName().trim();
+    if (sheetName.indexOf("학생명단") !== -1 || sheetName.indexOf("학생 명부") !== -1 || sheetName.indexOf("특별가점") !== -1) {
+      continue;
+    }
+    if (
+      sheetName.indexOf("출석") !== -1 || 
+      sheetName.indexOf("야자") !== -1 || 
+      sheetName.indexOf("기록") !== -1 || 
+      sheetName.match(/\\d+월/) ||
+      sheetName === "Sheet1" ||
+      sheetName === "시트1"
+    ) {
+      yajaSheets.push(allSheets[s]);
+    }
+  }
+
+  if (yajaSheets.length === 0 && allSheets.length > 1) {
+    for (let s = 1; s < allSheets.length; s++) {
+      yajaSheets.push(allSheets[s]);
+    }
+  }
 
   const monthlyAttendanceMap = {}; // { "2026-09": { "1101": count }, "2026-10": { "1101": count } }
   const foundMonthsSet = {};
 
-  if (yajaSheet) {
-    const rawData = yajaSheet.getDataRange().getValues();
-    const displayData = yajaSheet.getDataRange().getDisplayValues();
+  yajaSheets.forEach(sheet => {
+    const sheetName = sheet.getName();
+    let sheetDefaultYm = null;
+    const sheetMonthMatch = sheetName.match(/(\\d{1,2})월/);
+    if (sheetMonthMatch) {
+      sheetDefaultYm = curYear + '-' + ('0' + parseInt(sheetMonthMatch[1])).slice(-2);
+    }
+
+    const rawData = sheet.getDataRange().getValues();
+    const displayData = sheet.getDataRange().getDisplayValues();
 
     for (let i = 1; i < displayData.length; i++) {
       const dateCell = rawData[i][0] || displayData[i][0];
@@ -274,18 +302,18 @@ function fetchIntegratedData() {
 
       if (targetKey) {
         let count = 0;
-        if (p1.indexOf("출석") !== -1) count++;
-        if (p2.indexOf("출석") !== -1) count++;
+        if (p1.indexOf("출석") !== -1 || p1 === "O" || p1 === "o" || p1 === "1" || p1 === "참석") count++;
+        if (p2.indexOf("출석") !== -1 || p2 === "O" || p2 === "o" || p2 === "1" || p2 === "참석") count++;
 
         if (count > 0) {
-          const ym = parseYearMonthFromDate(dateCell, curYear, curMonth) || curYearMonth;
+          const ym = parseYearMonthFromDate(dateCell, curYear, curMonth) || sheetDefaultYm || curYearMonth;
           foundMonthsSet[ym] = true;
           if (!monthlyAttendanceMap[ym]) monthlyAttendanceMap[ym] = {};
           monthlyAttendanceMap[ym][targetKey] = (monthlyAttendanceMap[ym][targetKey] || 0) + count;
         }
       }
     }
-  }
+  });
 
   // 4. [당월(Current Month)] 실시간 학생 랭킹 데이터 구성 -> baseStudents.history
   const curYajaMap = monthlyAttendanceMap[curYearMonth] || {};
@@ -326,7 +354,7 @@ function fetchIntegratedData() {
   const pastMonths = Object.keys(foundMonthsSet)
     .filter(ym => ym < curYearMonth) // 현재 월보다 이전인 모든 달 (예: "2026-09", "2026-08" ...)
     .sort()
-    .reverse(); // 최신 지난달부터 정렬
+    .reverse();
 
   pastMonths.forEach(ym => {
     const ymParts = ym.split('-');
