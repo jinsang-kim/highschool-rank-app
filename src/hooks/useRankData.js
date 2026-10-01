@@ -92,22 +92,35 @@ export function useRankData() {
 
     // 조건: 이전에 접속한 달과 현재 달이 다르고, 오늘이 매월 1일인 경우
     if (lastChecked && lastChecked !== currentMonthKey && currentDate === 1) {
-      const currentRankings = processStudentRankings(students);
-      if (currentRankings.length > 0) {
-        const champ = currentRankings[0];
+      if (hallOfFame && hallOfFame.length > 0) {
+        const latestHof = hallOfFame[0];
         setChampionDataForPopup({
-          month: `${lastChecked.split('-')[0]}년 ${parseInt(lastChecked.split('-')[1])}월`,
-          champStudent: champ,
-          allRankings: currentRankings,
+          month: latestHof.month,
+          champStudent: {
+            name: latestHof.championStudent,
+            grade: latestHof.classInfo?.includes('학년') ? latestHof.classInfo.split('학년')[0] : '1',
+            classNum: latestHof.classInfo?.includes('반') ? latestHof.classInfo.split('학년 ')[1]?.replace('반', '') : '1',
+            studentId: latestHof.championStudent?.split(' ')[0] || '',
+            totalScore: latestHof.championScore,
+            tier: {
+              title: latestHof.tierName,
+              emoji: '👑',
+              tier: 1,
+              reward: latestHof.rewardGiven || '월간 MVP 특급 간식 상품권'
+            },
+            motto: latestHof.quote || '“모두 수고 많았어!”'
+          },
+          allRankings: latestHof.rankings || []
         });
         setShowMonthlyPopup(true);
         fireMonthlyGrandCelebration();
       }
       localStorage.setItem(STORAGE_KEYS.LAST_CHECKED_MONTH, currentMonthKey);
     } else if (!lastChecked) {
+      localStorage.setItem(STORAGE_KEYS.LAST_MONTH, currentMonthKey);
       localStorage.setItem(STORAGE_KEYS.LAST_CHECKED_MONTH, currentMonthKey);
     }
-  }, [students]);
+  }, [hallOfFame]);
 
   // GAS 동기화 함수
   const syncWithGas = useCallback(async (customUrl) => {
@@ -129,12 +142,21 @@ export function useRankData() {
       
       if (data && data.students && Array.isArray(data.students)) {
         setStudents(data.students);
+        
+        // 🌟 시트에서 자동 계산된 지난달 명예의 전당 Top 10 실시간 동기화!
+        if (data.hallOfFame && Array.isArray(data.hallOfFame) && data.hallOfFame.length > 0) {
+          setHallOfFame(data.hallOfFame);
+        }
+        
         setLastSyncTime(new Date());
         setIsSyncing(false);
         return true;
       } else if (data && data.classes && Array.isArray(data.classes)) {
         // 하위 호환
         setStudents(data.classes);
+        if (data.hallOfFame && Array.isArray(data.hallOfFame) && data.hallOfFame.length > 0) {
+          setHallOfFame(data.hallOfFame);
+        }
         setLastSyncTime(new Date());
         setIsSyncing(false);
         return true;
