@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Trophy, Sparkles, Calendar, User, ChevronDown, ChevronUp, PartyPopper, School, Medal, Crown } from 'lucide-react';
+import { Award, Trophy, Sparkles, Calendar, User, ChevronDown, ChevronUp, PartyPopper, School, Medal, Crown, Download, Phone } from 'lucide-react';
 import { fireRank1Confetti } from '../utils/confetti';
 
 export default function HallOfFame({ hallOfFame = [] }) {
@@ -8,6 +8,47 @@ export default function HallOfFame({ hallOfFame = [] }) {
 
   const toggleExpand = (yearMonth) => {
     setExpandedMonth(prev => prev === yearMonth ? null : yearMonth);
+  };
+
+  // 상위 20명 엑셀(CSV) 다운로드 함수 (전화번호 포함 & UTF-8 BOM 한글 깨짐 방지)
+  const downloadTop20Csv = (monthTitle, rankings = []) => {
+    const top20 = (rankings || []).slice(0, 20);
+    const headers = ['순위', '학번', '이름', '학년/반', '전화번호 (연락처)', '최종총점', '야자출석(교시)', '캐릭터칭호', '보상/시상품'];
+    
+    const rows = top20.map(r => {
+      const rawName = (r.name || '').replace(/\s*\([0-9]+\)/g, '').trim();
+      const phone = r.phone || '-';
+      const attCount = r.attCount !== undefined ? r.attCount : Math.max(0, Math.round(((r.score || 100) - 100) / 5));
+      const reward = r.reward || (r.rank === 1 ? '마라탕 세트 & 1위 트로피' :
+                                 r.rank <= 3 ? '프리미엄 디저트 세트 교환권' :
+                                 r.rank <= 10 ? '편의점 모바일 상품권' : '열공 갓생 간식 기프티콘');
+
+      return [
+        r.rank,
+        r.studentId || '',
+        rawName,
+        r.classInfo || '',
+        phone,
+        r.score || 0,
+        attCount,
+        `${r.tierEmoji || ''} ${r.tierTitle || ''}`.trim(),
+        reward
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${monthTitle}_상위20명_시상명단.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -38,7 +79,7 @@ export default function HallOfFame({ hallOfFame = [] }) {
             <div className="text-4xl">🏛️</div>
             <div className="font-bold text-slate-600">아직 등록된 명예의 전당 기록이 없습니다.</div>
             <p className="text-xs text-slate-400">
-              월말 마감(또는 교사 페이지의 월간 마감 실행) 시 1등부터 10등까지의 명예의 전당이 자동 등재됩니다!
+              구글 시트 연동 시 지난달 1등부터 10등까지의 명예의 전당이 자동 등재됩니다!
             </p>
           </div>
         ) : (
@@ -102,16 +143,31 @@ export default function HallOfFame({ hallOfFame = [] }) {
                     </div>
                   </div>
 
-                  {/* Slogan & Confetti Button */}
-                  <div className="mt-4 p-3.5 rounded-2xl bg-white/80 border border-pink-100 text-xs text-slate-700 italic flex items-center justify-between shadow-2xs">
-                    <span>{item.quote || '“매일매일 갓생 살기 성공! 다음 달도 다 같이 화이팅!”'}</span>
-                    <button
-                      onClick={() => fireRank1Confetti()}
-                      className="ml-2 px-3 py-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-xl text-xs font-black flex items-center shadow-xs shrink-0 transition-all"
-                    >
-                      <PartyPopper className="w-3.5 h-3.5 mr-1" />
-                      축하 폭죽 🎉
-                    </button>
+                  {/* Slogan, Confetti & CSV Export Button */}
+                  <div className="mt-4 p-3.5 rounded-2xl bg-white/80 border border-pink-100 text-xs text-slate-700 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-2xs">
+                    <span className="italic truncate text-slate-600 w-full sm:w-auto">
+                      {item.quote || '“매일매일 갓생 살기 성공! 다음 달도 다 같이 화이팅!”'}
+                    </span>
+                    
+                    <div className="flex items-center space-x-2 shrink-0 w-full sm:w-auto justify-end">
+                      {/* 상위 20명 엑셀 다운로드 버튼 */}
+                      <button
+                        onClick={() => downloadTop20Csv(item.month, item.rankings)}
+                        title="전화번호가 포함된 상위 20명 시상 명단 CSV 파일 다운로드"
+                        className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-xs font-bold flex items-center shadow-xs transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1" />
+                        <span>상위 20명 명단 다운로드</span>
+                      </button>
+
+                      <button
+                        onClick={() => fireRank1Confetti()}
+                        className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-xl text-xs font-black flex items-center shadow-xs transition-all"
+                      >
+                        <PartyPopper className="w-3.5 h-3.5 mr-1" />
+                        <span>축하 폭죽 🎉</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
